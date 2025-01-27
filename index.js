@@ -4,7 +4,9 @@ const { getSaleslines } = require('./dbProcess');
 const { getCustomersInExtra, 
     getProductGroups, 
     createTurnoverObjects,
-    bookPoints } = require('./apiBosch')
+    bookPoints,
+    getFailedTurnovers,
+    clearAllFailedTurnovers } = require('./apiBosch')
 
 const defineDotEnvFileName = () => {
     const envArgs = process.argv.slice(2);
@@ -96,6 +98,36 @@ const processSaleslines = async () => {
         console.error("Error processing saleslines:", err);
         throw err;
     }
-};
+}
 
-processSaleslines();
+// Process turnovers from tmp which failed
+const processFailedTurnovers = async () => {
+    try {
+        const failedTurnovers = getFailedTurnovers()
+
+        // Remove duplicates based on turnover, operator and trasactionId
+        const uniqueTurnovers = new Set()
+        const filteredTurnovers = failedTurnovers.filter(turnover => {
+            const uniqueKey = `${turnover.turnover}_${turnover.operator}${turnover.transactionId}`
+            if (uniqueTurnovers.has(uniqueKey)) {
+                return false
+            }
+            uniqueTurnovers.add(uniqueKey)
+            return true
+        })
+        clearAllFailedTurnovers()
+        bookPoints(config, filteredTurnovers, process.env.API_BOSCH_COUNTRY, process.env.API_BOSCH_BATCHSIZE)
+        
+        
+    } catch(err) {
+        console.error(err)
+    }
+}
+
+const mode = process.argv[3]
+
+if (mode === undefined) {
+    processSaleslines();
+} else if (mode === "handlefailed") {
+    processFailedTurnovers();
+}

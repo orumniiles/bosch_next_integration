@@ -143,6 +143,7 @@ const bookPoints = async (configFile, turnovers, country, batchSize) => {
 }
 
 const sendBookPoints = async (data, config) => {
+    // throw 'simulating error'
     try {
         const response = await axios.post('points/book', data, config)
         return response
@@ -186,5 +187,7 @@ module.exports = {
     getCustomersInExtra,
     getProductGroups,
     createTurnoverObjects,
-    bookPoints
+    bookPoints,
+    getFailedTurnovers,
+    clearAllFailedTurnovers
 };
